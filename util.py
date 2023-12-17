@@ -9,7 +9,7 @@ from tqdm.auto import tqdm
 
 
 class Constants:
-	CAPTAIN_COOK4D = "captain_cook4d"
+	CAPTAIN_COOK_4D = "captain_cook_4d"
 	
 	GOPRO = "gopro"
 	HOLOLENS = "hololens"
@@ -36,10 +36,14 @@ class Constants:
 	DEPTH = "depth"
 	AB = "ab"
 	
+	DEPTH_POSE = "depth_pose"
+	PV_POSE = "pv_pose"
+	SPATIAL_POSE = "spatial_pose"
+	
 	IMU = "imu"
-	DEPTH_POSE = "depth_pose_pkl"
-	PV_POSE = "pv_pose_pkl"
-	SPATIAL_POSE = "spatial_pkl"
+	DEPTH_POSE_PKL = "depth_pose_pkl"
+	PV_POSE_PKL = "pv_pose_pkl"
+	SPATIAL_POSE_PKL = "spatial_pkl"
 	
 	IMU_MAGNETOMETER = "imu_magnetometer"
 	IMU_GYROSCOPE = "imu_gyroscope"
@@ -149,7 +153,7 @@ def download_data(download_url_links, download_file_paths):
 def prepare_gopro_2d_output_directory(args, output_dir: Path):
 	output_dir.mkdir(parents=True, exist_ok=True)
 	
-	data_directory = output_dir / Constants.CAPTAIN_COOK4D
+	data_directory = output_dir / Constants.CAPTAIN_COOK_4D
 	data_directory.mkdir(parents=True, exist_ok=True)
 	
 	gopro_data_directory = data_directory / Constants.GOPRO
@@ -168,7 +172,7 @@ def prepare_gopro_2d_output_directory(args, output_dir: Path):
 def prepare_hololens_2d_output_directory(args, output_dir: Path):
 	output_dir.mkdir(parents=True, exist_ok=True)
 	
-	data_directory = output_dir / Constants.CAPTAIN_COOK4D
+	data_directory = output_dir / Constants.CAPTAIN_COOK_4D
 	data_directory.mkdir(parents=True, exist_ok=True)
 	
 	hololens_data_directory = data_directory / Constants.HOLOLENS
@@ -183,10 +187,55 @@ def prepare_hololens_2d_output_directory(args, output_dir: Path):
 	return data_directory
 
 
+def prepare_hololens_3d_output_directory(args, output_dir: Path):
+	output_dir.mkdir(parents=True, exist_ok=True)
+	
+	data_directory = output_dir / Constants.CAPTAIN_COOK_4D
+	data_directory.mkdir(parents=True, exist_ok=True)
+	
+	hololens_data_directory = data_directory / Constants.HOLOLENS
+	hololens_data_directory.mkdir(parents=True, exist_ok=True)
+	
+	hololens_sync_data_directory = hololens_data_directory / Constants.SYNC
+	hololens_sync_data_directory.mkdir(parents=True, exist_ok=True)
+	
+	hololens_sync_pv_data_directory = hololens_sync_data_directory / Constants.PV
+	hololens_sync_pv_data_directory.mkdir(parents=True, exist_ok=True)
+	
+	hololens_sync_pv_pose_data_directory = hololens_sync_data_directory / Constants.PV_POSE
+	hololens_sync_pv_pose_data_directory.mkdir(parents=True, exist_ok=True)
+	
+	hololens_sync_depth_pose_data_directory = hololens_sync_data_directory / Constants.DEPTH_POSE
+	hololens_sync_depth_pose_data_directory.mkdir(parents=True, exist_ok=True)
+	
+	hololens_sync_spatial_data_directory = hololens_sync_data_directory / Constants.SPATIAL_POSE
+	hololens_sync_spatial_data_directory.mkdir(parents=True, exist_ok=True)
+	
+	hololens_sync_imu_magnetometer_data_directory = hololens_sync_data_directory / Constants.IMU_MAGNETOMETER
+	hololens_sync_imu_magnetometer_data_directory.mkdir(parents=True, exist_ok=True)
+	
+	hololens_sync_imu_gyroscope_data_directory = hololens_sync_data_directory / Constants.IMU_GYROSCOPE
+	hololens_sync_imu_gyroscope_data_directory.mkdir(parents=True, exist_ok=True)
+	
+	hololens_sync_imu_accelerometer_data_directory = hololens_sync_data_directory / Constants.IMU_ACCELEROMETER
+	hololens_sync_imu_accelerometer_data_directory.mkdir(parents=True, exist_ok=True)
+	
+	hololens_sync_depth_ahat_ab_data_directory = hololens_sync_data_directory / Constants.AB
+	hololens_sync_depth_ahat_ab_data_directory.mkdir(parents=True, exist_ok=True)
+	
+	hololens_sync_depth_ahat_depth_data_directory = hololens_sync_data_directory / Constants.DEPTH
+	hololens_sync_depth_ahat_depth_data_directory.mkdir(parents=True, exist_ok=True)
+	
+	hololens_metadata_directory = hololens_sync_data_directory / Constants.METADATA
+	hololens_metadata_directory.mkdir(parents=True, exist_ok=True)
+	
+	return data_directory
+
+
 def prepare_output_directory(args, output_dir: Path):
 	output_dir.mkdir(parents=True, exist_ok=True)
 	
-	data_directory = output_dir / Constants.CAPTAIN_COOK4D
+	data_directory = output_dir / Constants.CAPTAIN_COOK_4D
 	data_directory.mkdir(parents=True, exist_ok=True)
 	
 	if args.data2d:
@@ -211,10 +260,10 @@ def prepare_output_directory(args, output_dir: Path):
 		spatial_directory = data_directory / Constants.SPATIAL
 		spatial_directory.mkdir(parents=True, exist_ok=True)
 		
-		pv_pose_directory = data_directory / Constants.PV_POSE
+		pv_pose_directory = data_directory / Constants.PV_POSE_PKL
 		pv_pose_directory.mkdir(parents=True, exist_ok=True)
 		
-		depth_pose_directory = data_directory / Constants.DEPTH_POSE
+		depth_pose_directory = data_directory / Constants.DEPTH_POSE_PKL
 		depth_pose_directory.mkdir(parents=True, exist_ok=True)
 		
 		imu_magnetometer_directory = data_directory / Constants.IMU / Constants.IMU_MAGNETOMETER

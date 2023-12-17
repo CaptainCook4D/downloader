@@ -30,7 +30,6 @@ def process_download_hololens_data(download_args):
 					print(f"Hololens 360P data downloaded for {recording_id}")
 			else:
 				print(f"Hololens 360P data not available for {recording_id}")
-		
 	
 	print("-------------------------------------------------")
 	print(f"Downloading {len(download_url_links)} files")
@@ -44,7 +43,7 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser(description='Download the data from BOX Cloud')
 	
 	parser.add_argument('--data2d', action='store_true',
-	                    help='Use this to download 2D data from Box Cloud which includes GOPRO [360p] data')
+	                    help='Use this to download 2D data from Box Cloud which includes Hololens [360p] data')
 	
 	parser.add_argument('--output_dir', type=str, default="data", help='Output directory to store the downloaded data')
 	
