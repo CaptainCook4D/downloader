@@ -17,7 +17,8 @@ def process_download_gopro_data(download_args):
 	download_file_paths = []
 	for index, (recording_id, recording_download_link_dict) in enumerate(download_links.items()):
 		if download_args.data2d:
-			if recording_download_link_dict[Constants.GOPRO_RESOLUTION_360P] is not None:
+			if (Constants.GOPRO_RESOLUTION_360P in recording_download_link_dict and
+					recording_download_link_dict[Constants.GOPRO_RESOLUTION_360P] is not None):
 				gopro_360_url = recording_download_link_dict[Constants.GOPRO_RESOLUTION_360P]
 				gopro_360p_path = data_directory / Constants.GOPRO / Constants.RESOLUTION_360P / f"{recording_id}_360p.mp4"
 				download_url_links.append(gopro_360_url)
