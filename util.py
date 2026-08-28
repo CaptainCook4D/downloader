@@ -95,11 +95,164 @@ class Constants:
 	DURATION = "duration"
 
 
+# ---------------------------------------------------------------------------------------
+# ------------------------ HOLOLENS STREAM TABLE ----------------------------------------
+#
+# Every Hololens stream Box holds for a recording, in both the `sync` and the `raw`
+# variant.  `sync` streams are time aligned with the GoPro video; `raw` streams are the
+# untouched device output.  A `None` key means the stream does not exist in that variant.
+#
+#   stream name -> (sync link key, raw link key, output sub directory, file name template)
+# ---------------------------------------------------------------------------------------
+
+HOLOLENS_STREAMS = {
+	"pv_video": (
+		Constants.HOLOLENS_SYNC_PV_VIDEO,
+		None,
+		"pv",
+		"{recording_id}_360p.mp4",
+	),
+	"pv_frames": (
+		Constants.HOLOLENS_SYNC_PV_FRAMES_ZIP,
+		Constants.HOLOLENS_RAW_PV_FRAMES_ZIP,
+		"pv_frames",
+		"{recording_id}_frames.zip",
+	),
+	"pv_pose": (
+		Constants.HOLOLENS_SYNC_PV_POSE_PKL,
+		Constants.HOLOLENS_RAW_PV_POSE_PKL,
+		"pv_pose",
+		"{recording_id}_pv_pose.pkl",
+	),
+	"depth": (
+		Constants.HOLOLENS_SYNC_DEPTH_AHAT_DEPTH_ZIP,
+		Constants.HOLOLENS_RAW_DEPTH_AHAT_DEPTH_ZIP,
+		"depth",
+		"{recording_id}_depth.zip",
+	),
+	"ab": (
+		Constants.HOLOLENS_SYNC_DEPTH_AHAT_AB_ZIP,
+		Constants.HOLOLENS_RAW_DEPTH_AHAT_AB_ZIP,
+		"ab",
+		"{recording_id}_ab.zip",
+	),
+	"depth_pose": (
+		Constants.HOLOLENS_SYNC_DEPTH_POSE_PKL,
+		Constants.HOLOLENS_RAW_DEPTH_POSE_PKL,
+		"depth_pose",
+		"{recording_id}_depth_ahat_pose.pkl",
+	),
+	"spatial": (
+		Constants.HOLOLENS_SYNC_SPATIAL_PKL,
+		Constants.HOLOLENS_RAW_SPATIAL_PKL,
+		"spatial",
+		"{recording_id}_spatial.pkl",
+	),
+	"imu_accelerometer": (
+		Constants.HOLOLENS_SYNC_IMU_ACCELEROMETER_PKL,
+		Constants.HOLOLENS_RAW_IMU_ACCELEROMETER_PKL,
+		"imu_accelerometer",
+		"{recording_id}_imu_accelerometer.pkl",
+	),
+	"imu_gyroscope": (
+		Constants.HOLOLENS_SYNC_IMU_GYROSCOPE_PKL,
+		Constants.HOLOLENS_RAW_IMU_GYROSCOPE_PKL,
+		"imu_gyroscope",
+		"{recording_id}_imu_gyroscope.pkl",
+	),
+	"imu_magnetometer": (
+		Constants.HOLOLENS_SYNC_IMU_MAGNETOMETER_PKL,
+		Constants.HOLOLENS_RAW_IMU_MAGNETOMETER_PKL,
+		"imu_magnetometer",
+		"{recording_id}_imu_magnetometer.pkl",
+	),
+	"mc": (
+		None,
+		Constants.HOLOLENS_RAW_MC_PKL,
+		"mc",
+		"{recording_id}_mc.pkl",
+	),
+}
+
+# Named bundles so users do not have to list every stream by hand.
+STREAM_GROUPS = {
+	"depth": ["depth", "ab", "depth_pose"],
+	"pose": ["pv_pose", "depth_pose", "spatial"],
+	"imu": ["imu_accelerometer", "imu_gyroscope", "imu_magnetometer"],
+	"pv": ["pv_video", "pv_frames", "pv_pose"],
+}
+
+# --data3d is shorthand for everything that describes the scene in 3D.
+DATA_3D_STREAMS = ["depth", "ab", "depth_pose", "spatial",
+                   "imu_accelerometer", "imu_gyroscope", "imu_magnetometer"]
+
+ALL_STREAMS = list(HOLOLENS_STREAMS.keys())
+
+
+def resolve_streams(names):
+	"""Expand group names into concrete stream names, preserving order and dropping repeats."""
+	resolved = []
+	for name in names:
+		expanded = STREAM_GROUPS.get(name, [name])
+		for stream in expanded:
+			if stream not in HOLOLENS_STREAMS:
+				raise ValueError(f"Unknown stream '{stream}'. Known streams: {', '.join(ALL_STREAMS)}")
+			if stream not in resolved:
+				resolved.append(stream)
+	return resolved
+
+
+def plan_hololens_downloads(download_links, streams, variants, data_directory, recording_ids=None):
+	"""
+	Work out exactly which files to fetch.
+
+	Returns (urls, paths, skipped) where `skipped` explains, per recording, which
+	requested streams have no link -- roughly 60 recordings have no Hololens data at
+	all, and around 40 more are missing the spatial streams because of device drops.
+	"""
+	urls = []
+	paths = []
+	skipped = []
+
+	for recording_id, recording_links in download_links.items():
+		if recording_ids and recording_id not in recording_ids:
+			continue
+		if not isinstance(recording_links, dict):
+			continue
+
+		for variant in variants:
+			variant_index = 0 if variant == Constants.SYNC else 1
+			for stream in streams:
+				link_key = HOLOLENS_STREAMS[stream][variant_index]
+				sub_directory = HOLOLENS_STREAMS[stream][2]
+				file_name = HOLOLENS_STREAMS[stream][3].format(recording_id=recording_id)
+
+				if link_key is None:
+					skipped.append((recording_id, variant, stream, "not available in this variant"))
+					continue
+
+				url = recording_links.get(link_key)
+				if not url:
+					skipped.append((recording_id, variant, stream, "no link for this recording"))
+					continue
+
+				urls.append(url)
+				paths.append(data_directory / Constants.HOLOLENS / variant / sub_directory / file_name)
+
+	return urls, paths, skipped
+
+
+def prepare_download_directories(paths):
+	"""Create every parent directory the planned downloads need."""
+	for path in paths:
+		Path(path).parent.mkdir(parents=True, exist_ok=True)
+
+
 def download_url(download_tuple):
 	url, target_path = download_tuple
 	max_retries = 5
 	retry_delay = 5
-	
+
 	def fetch_response(url):
 		for attempt in range(max_retries):
 			try:
@@ -111,32 +264,42 @@ def download_url(download_tuple):
 				if attempt < max_retries - 1:
 					print(f"Retrying in {retry_delay} seconds...")
 					time.sleep(retry_delay)
-	
+		return None
+
 	response = fetch_response(url)
+	if response is None:
+		print(f"Giving up on {url} after {max_retries} attempts \n")
+		return None
+
 	total = response.headers.get('content-length')
-	
+	total = int(total) if total is not None else None
+
+	# ---- The 3D archives are large, so never re-download a file we already hold in full ----
 	if os.path.exists(target_path):
 		file_size = os.path.getsize(target_path)
-		if file_size == int(total):
+		if total is not None and file_size == total:
 			print(f"File {target_path} already exists, skipping download \n")
+			response.close()
 			return url
-		else:
-			print(
-				f"File {target_path} already exists, but size {file_size} is different from total {total}, downloading again \n")
-			os.remove(target_path)
-			parent_dir = os.path.dirname(target_path)
-			if not os.path.exists(parent_dir):
-				parent_dir.mkdir(parents=True, exist_ok=True)
-	
-	response.raise_for_status()
-	with open(target_path, "wb") as download_file:
-		for data in response.iter_content(chunk_size=1024):
+		print(f"File {target_path} already exists, but size {file_size} does not match {total}, "
+		      f"downloading again \n")
+		os.remove(target_path)
+
+	os.makedirs(os.path.dirname(os.path.abspath(target_path)), exist_ok=True)
+
+	partial_path = f"{target_path}.part"
+	with open(partial_path, "wb") as download_file:
+		for data in response.iter_content(chunk_size=1024 * 1024):
 			download_file.write(data)
+
+	# ---- Only publish the final name once the body is fully written ----
+	os.replace(partial_path, target_path)
 	return url
 
 
 def download_data(download_url_links, download_file_paths):
 	# ---- DON'T INCREASE MAX_WORKERS, ELSE DOWNLOAD WILL BE INTERRUPTED ----
+	prepare_download_directories(download_file_paths)
 	with ThreadPoolExecutor(max_workers=3) as executor:
 		results = list(
 			tqdm(
@@ -147,6 +310,16 @@ def download_data(download_url_links, download_file_paths):
 				total=len(download_url_links)
 			)
 		)
+
+	failed = [url for url, result in zip(download_url_links, results) if result is None]
+	if failed:
+		print(f"\n{len(failed)} of {len(download_url_links)} files could not be downloaded:")
+		for url in failed[:20]:
+			print(f"  {url}")
+		if len(failed) > 20:
+			print(f"  ... and {len(failed) - 20} more")
+	else:
+		print(f"\nAll {len(download_url_links)} files downloaded successfully")
 	return results
 
 

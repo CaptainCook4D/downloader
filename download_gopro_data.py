@@ -17,26 +17,30 @@ def process_download_gopro_data(download_args):
 	download_file_paths = []
 	for index, (recording_id, recording_download_link_dict) in enumerate(download_links.items()):
 		if download_args.data2d:
-			if (Constants.GOPRO_RESOLUTION_360P in recording_download_link_dict and
-					recording_download_link_dict[Constants.GOPRO_RESOLUTION_360P] is not None):
-				gopro_360_url = recording_download_link_dict[Constants.GOPRO_RESOLUTION_360P]
+			# ---- A handful of recordings have no GoPro 360p, fall back to the Hololens view ----
+			gopro_360_url = recording_download_link_dict.get(Constants.GOPRO_RESOLUTION_360P)
+			if gopro_360_url is not None:
 				gopro_360p_path = data_directory / Constants.GOPRO / Constants.RESOLUTION_360P / f"{recording_id}_360p.mp4"
 				download_url_links.append(gopro_360_url)
 				download_file_paths.append(gopro_360p_path)
 			else:
-				if recording_download_link_dict[Constants.HOLOLENS_SYNC_PV_VIDEO] is not None:
-					hololens_pv_url = recording_download_link_dict[Constants.HOLOLENS_SYNC_PV_VIDEO]
+				hololens_pv_url = recording_download_link_dict.get(Constants.HOLOLENS_SYNC_PV_VIDEO)
+				if hololens_pv_url is not None:
 					hololens_pv_path = data_directory / Constants.GOPRO / Constants.RESOLUTION_360P / f"{recording_id}_360p.mp4"
 					download_url_links.append(hololens_pv_url)
 					download_file_paths.append(hololens_pv_path)
-					print(f"Hololens 360P data downloaded for {recording_id}")
-			
+					print(f"No GoPro 360P for {recording_id}, using the Hololens view instead")
+				else:
+					print(f"No 360P video available for {recording_id}")
+
 			if download_args.resolution4K:
-				if recording_download_link_dict[Constants.GOPRO_RESOLUTION_4K] is not None:
-					gopro_4k_url = recording_download_link_dict[Constants.GOPRO_RESOLUTION_4K]
+				gopro_4k_url = recording_download_link_dict.get(Constants.GOPRO_RESOLUTION_4K)
+				if gopro_4k_url is not None:
 					gopro_4k_path = data_directory / Constants.GOPRO / Constants.RESOLUTION_4K / f"{recording_id}_4K.mp4"
 					download_url_links.append(gopro_4k_url)
 					download_file_paths.append(gopro_4k_path)
+				else:
+					print(f"No GoPro 4K available for {recording_id}")
 	
 	print("-------------------------------------------------")
 	print(f"Downloading {len(download_url_links)} files")

@@ -21,13 +21,11 @@ def process_download_hololens_data(download_args):
 	download_file_paths = []
 	for index, (recording_id, recording_download_link_dict) in enumerate(download_links.items()):
 		if download_args.data2d:
-			if Constants.HOLOLENS_SYNC_PV_VIDEO in recording_download_link_dict:
-				if recording_download_link_dict[Constants.HOLOLENS_SYNC_PV_VIDEO] is not None:
-					hololens_pv_url = recording_download_link_dict[Constants.HOLOLENS_SYNC_PV_VIDEO]
-					hololens_pv_path = data_directory / Constants.HOLOLENS / Constants.SYNC / Constants.PV / f"{recording_id}_360p.mp4"
-					download_url_links.append(hololens_pv_url)
-					download_file_paths.append(hololens_pv_path)
-					print(f"Hololens 360P data downloaded for {recording_id}")
+			hololens_pv_url = recording_download_link_dict.get(Constants.HOLOLENS_SYNC_PV_VIDEO)
+			if hololens_pv_url is not None:
+				hololens_pv_path = data_directory / Constants.HOLOLENS / Constants.SYNC / Constants.PV / f"{recording_id}_360p.mp4"
+				download_url_links.append(hololens_pv_url)
+				download_file_paths.append(hololens_pv_path)
 			else:
 				print(f"Hololens 360P data not available for {recording_id}")
 	
